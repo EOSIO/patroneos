@@ -8,10 +8,12 @@ import (
 	"net/http"
 )
 
+// Config holds the configuration for the entire application
 type Config struct {
-	Protocol string
-	URL      string
-	Port     string
+	ListenPort     string
+	NodeosProtocol string
+	NodeosURL      string
+	NodeosPort     string
 }
 
 var config Config
@@ -20,7 +22,7 @@ var client http.Client
 func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	log.Println("forward calls to nodeos")
 
-	nodeosHost := fmt.Sprintf("%s://%s:%s", config.Protocol, config.URL, config.Port)
+	nodeosHost := fmt.Sprintf("%s://%s:%s", config.NodeosProtocol, config.NodeosURL, config.NodeosPort)
 	url := nodeosHost + r.URL.String()
 	method := r.Method
 	body, _ := ioutil.ReadAll(r.Body)
@@ -47,14 +49,15 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 func main() {
 	// TODO: make configurable from file/env
 	config = Config{
-		Protocol: "http",
-		URL:      "localhost",
-		Port:     "8888",
+		ListenPort:     "8080",
+		NodeosProtocol: "http",
+		NodeosURL:      "localhost",
+		NodeosPort:     "8888",
 	}
 
 	client = http.Client{}
 
 	log.Println("Proxying and filtering nodeos requests...")
 	http.HandleFunc("/", forwardCallToNodeos)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+config.ListenPort, nil))
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -10,10 +11,10 @@ import (
 
 // Config holds the configuration for the entire application
 type Config struct {
-	ListenPort     string
-	NodeosProtocol string
-	NodeosURL      string
-	NodeosPort     string
+	ListenPort     string `json:"listenPort"`
+	NodeosProtocol string `json:"nodeosProtocol"`
+	NodeosURL      string `json:"nodeosUrl"`
+	NodeosPort     string `json:"nodeosPort"`
 }
 
 var config Config
@@ -46,16 +47,20 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func main() {
-	// TODO: make configurable from file/env
-	config = Config{
-		ListenPort:     "8080",
-		NodeosProtocol: "http",
-		NodeosURL:      "localhost",
-		NodeosPort:     "8888",
+func parseConfigFile(filename string) {
+	fileBody, err := ioutil.ReadFile(filename)
+
+	if err != nil {
+		log.Fatalf("Error reading configuration file.")
 	}
 
+	json.Unmarshal(fileBody, &config)
+}
+
+func main() {
 	client = http.Client{}
+
+	parseConfigFile("./config.json")
 
 	log.Println("Proxying and filtering nodeos requests...")
 	http.HandleFunc("/", forwardCallToNodeos)

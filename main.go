@@ -51,28 +51,32 @@ var configFile string
 var appConfig Config
 var client http.Client
 
+// getHost returns the host based on the existence of the X-Forwarded-For header.
 func getHost(r *http.Request) string {
-	var remoteIP string
+	var remoteHost string
 
 	if header := r.Header.Get("X-Forwarded-For"); header != "" {
-		remoteIP = header
+		remoteHost = header
 	} else {
-		remoteIP = r.RemoteAddr
+		remoteHost = r.RemoteAddr
 	}
 
-	return remoteIP
+	return remoteHost
 }
 
+// logFailure logs a failure to the Fail2Ban server
 func logFailure(message string, r *http.Request) {
 	remoteHost := getHost(r)
 	log.Printf("Failure: %s %s", remoteHost, message)
 }
 
+// logSuccess logs a success to the Fail2Ban server
 func logSuccess(message string, r *http.Request) {
 	remoteHost := getHost(r)
 	log.Printf("Success: %s %s", remoteHost, message)
 }
 
+// validateJSON checks that the POST body contains a valid JSON object.
 func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jsonBytes, err := ioutil.ReadAll(r.Body)
@@ -86,11 +90,13 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// validateSignatures checks that the transaction does not have more signatures than the max allowed.
 func validateSignatures(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var transaction Transaction
+
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
-		var transaction Transaction
 		err := json.Unmarshal(jsonBytes, &transaction)
 		if err != nil {
 			logFailure("Error parsing transaction format", r)
@@ -106,11 +112,13 @@ func validateSignatures(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// validateContract checks that the transaction does not act on a blacklisted contract.
 func validateContract(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var transaction Transaction
+
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
-		var transaction Transaction
 		err := json.Unmarshal(jsonBytes, &transaction)
 		if err != nil {
 			logFailure("Error parsing transaction format", r)
@@ -129,6 +137,7 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// validateTransactionSize checks that the transaction data does not exceed the max allowed size.
 func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
@@ -166,6 +175,8 @@ func chainMiddleware(mw ...middleware) middleware {
 	}
 }
 
+// If the request passes all middleware validations
+// we forward it to the node to be processed.
 func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	log.Println("forward calls to nodeos")
 
@@ -191,16 +202,27 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	body, _ = ioutil.ReadAll(res.Body)
 	log.Printf("Nodeos response: %s - %s", res.Status, body)
 	logSuccess("", r)
-	w.Write(body)
+	_, err = w.Write(body)
+	if err != nil {
+		log.Printf("Error writing response body %s", err)
+		return
+	}
 }
 
+// updateConfig allows the configuration to be updated via POST requests.
 func updateConfig(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		responseBody, err := json.MarshalIndent(appConfig, "", "    ")
 		if err != nil {
 			log.Printf("Failed to marshal config %s", err)
+			return
 		}
-		w.Write(responseBody)
+
+		_, err = w.Write(responseBody)
+		if err != nil {
+			log.Printf("Error writing response body %s", err)
+			return
+		}
 	} else if r.Method == "POST" {
 		body, _ := ioutil.ReadAll(r.Body)
 
@@ -252,6 +274,7 @@ func parseConfigFile() {
 func main() {
 	client = http.Client{}
 
+	// Middleware are executed in the order that they are passed to chainMiddleware.
 	middlewareChain := chainMiddleware(
 		validateJSON,
 		validateTransactionSize,

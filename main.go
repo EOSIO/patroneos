@@ -17,6 +17,8 @@ type Config struct {
 	NodeosPort     string `json:"nodeosPort"`
 }
 
+const configFile string = "./config.json"
+
 var config Config
 var client http.Client
 
@@ -47,22 +49,41 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	w.Write(body)
 }
 
-func parseConfigFile(filename string) {
-	fileBody, err := ioutil.ReadFile(filename)
+func updateConfig(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		responseBody, err := json.MarshalIndent(config, "", "    ")
+		if err != nil {
+			log.Printf("Failed to marshal config %s", err)
+		}
+		w.Write(responseBody)
+	} else if r.Method == "POST" {
+		body, _ := ioutil.ReadAll(r.Body)
+		json.Unmarshal(body, &config)
+		ioutil.WriteFile(configFile, body, 0644)
+	}
+}
+
+func parseConfigFile() {
+	fileBody, err := ioutil.ReadFile(configFile)
 
 	if err != nil {
 		log.Fatalf("Error reading configuration file.")
 	}
 
-	json.Unmarshal(fileBody, &config)
+	err = json.Unmarshal(fileBody, &config)
+
+	if err != nil {
+		log.Fatalf("Error unmarshaling configuration file.")
+	}
 }
 
 func main() {
 	client = http.Client{}
 
-	parseConfigFile("./config.json")
+	parseConfigFile()
 
 	log.Println("Proxying and filtering nodeos requests...")
 	http.HandleFunc("/", forwardCallToNodeos)
+	http.HandleFunc("/config", updateConfig)
 	log.Fatal(http.ListenAndServe(":"+config.ListenPort, nil))
 }

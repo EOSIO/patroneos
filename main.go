@@ -3,10 +3,12 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 )
 
 // Middleware returns a handler that can perform various operations
@@ -44,7 +46,7 @@ type Transaction struct {
 	Authorizations []interface{} `json:"authorizations"`
 }
 
-const configFile string = "./config.json"
+var configFile string
 
 var appConfig Config
 var client http.Client
@@ -201,8 +203,35 @@ func updateConfig(w http.ResponseWriter, r *http.Request) {
 		w.Write(responseBody)
 	} else if r.Method == "POST" {
 		body, _ := ioutil.ReadAll(r.Body)
-		json.Unmarshal(body, &appConfig)
-		ioutil.WriteFile(configFile, body, 0644)
+
+		err := json.Unmarshal(body, &appConfig)
+		if err != nil {
+			log.Printf("Error unmarshaling updated config %s", err)
+			return
+		}
+
+		err = ioutil.WriteFile(configFile, body, 0644)
+		if err != nil {
+			log.Printf("Error writing new configuration to file %s", err)
+			return
+		}
+	}
+}
+
+func parseArgs() {
+	const (
+		defaultConfigLocation = "./config.json"
+		defaultShowHelp       = false
+	)
+	var showHelp bool
+	flag.BoolVar(&showHelp, "h", defaultShowHelp, "shows application help")
+	flag.StringVar(&configFile, "configFile", defaultConfigLocation, "location of the file used for application configuration")
+
+	flag.Parse()
+
+	if showHelp {
+		flag.Usage()
+		os.Exit(1)
 	}
 }
 
@@ -230,6 +259,7 @@ func main() {
 		validateContract,
 	)
 
+	parseArgs()
 	parseConfigFile()
 
 	log.Println("Proxying and filtering nodeos requests...")

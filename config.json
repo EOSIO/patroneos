@@ -1,8 +1,16 @@
 {
     "listenPort": "8080",
+
     "nodeosProtocol": "http",
     "nodeosUrl": "localhost",
     "nodeosPort": "8888",
+
+    "contractBlackList": {
+        "currency": true
+    },
+    "maxSignatures": 10,
+    "maxTransactionSize": 500000,
+
     "checkpointEndpoints": [],
     "proxyEndpoints": []
 }

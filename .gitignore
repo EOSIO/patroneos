@@ -1,6 +1,8 @@
 rpc-checkpoint
 main
 
+fail2ban.log
+
 # Binaries for programs and plugins
 *.exe
 *.dll

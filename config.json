@@ -11,6 +11,8 @@
     "maxSignatures": 10,
     "maxTransactionSize": 500000,
 
-    "checkpointEndpoints": [],
-    "proxyEndpoints": []
+    "logEndpoints": ["http://localhost:8080"],
+    "filterEndpoints": ["http://localhost:8081"],
+
+    "logFileLocation": "./fail2ban.log"
 }

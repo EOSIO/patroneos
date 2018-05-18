@@ -9,7 +9,7 @@
         "currency": true
     },
     "maxSignatures": 10,
-    "maxTransactionSize": 500000,
+    "maxTransactionSize": 1000000,
 
     "logEndpoints": ["http://localhost:8080"],
     "filterEndpoints": ["http://localhost:8081"],

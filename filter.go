@@ -97,7 +97,7 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
 		if len(jsonBytes) > 0 {
 			if !json.Valid(jsonBytes) || err != nil {
-				logFailure("Invalid JSON provided", r)
+				logFailure("INVALID_JSON", r)
 				http.Error(w, "INVALID_JSON", 400)
 				return
 			}
@@ -114,16 +114,17 @@ func validateSignatures(next http.HandlerFunc) http.HandlerFunc {
 
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
-		err := json.Unmarshal(jsonBytes, &transaction)
-		if err != nil {
-			logFailure("Error parsing transaction format", r)
-			return
-		}
-		if len(transaction.Signatures) > appConfig.MaxSignatures {
-			// TODO: should this fail or allow through?
-			logFailure("Too many signatures on the transaction", r)
-			http.Error(w, "INVALID_NUMBER_SIGNATURES", 400)
-			return
+		if len(jsonBytes) > 0 {
+			err := json.Unmarshal(jsonBytes, &transaction)
+			if err != nil {
+				logFailure("PARSING_ERROR", r)
+				return
+			}
+			if len(transaction.Signatures) > appConfig.MaxSignatures {
+				logFailure("INVALID_NUMBER_SIGNATURES", r)
+				http.Error(w, "INVALID_NUMBER_SIGNATURES", 400)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	}
@@ -136,18 +137,20 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
-		err := json.Unmarshal(jsonBytes, &transaction)
-		if err != nil {
-			logFailure("Error parsing transaction format", r)
-			return
-		}
-
-		for _, action := range transaction.Actions {
-			_, exists := appConfig.ContractBlackList[action.Code]
-			if exists {
-				logFailure("This contract is blacklisted", r)
-				http.Error(w, "BLACKLISTED_CONTRACT", 400)
+		if len(jsonBytes) > 0 {
+			err := json.Unmarshal(jsonBytes, &transaction)
+			if err != nil {
+				logFailure("PARSING_ERROR", r)
 				return
+			}
+
+			for _, action := range transaction.Actions {
+				_, exists := appConfig.ContractBlackList[action.Code]
+				if exists {
+					logFailure("BLACKLISTED_CONTRACT", r)
+					http.Error(w, "BLACKLISTED_CONTRACT", 400)
+					return
+				}
 			}
 		}
 		next.ServeHTTP(w, r)
@@ -159,17 +162,19 @@ func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
-		var transaction Transaction
-		err := json.Unmarshal(jsonBytes, &transaction)
-		if err != nil {
-			logFailure("Error parsing transaction format", r)
-			return
-		}
-		for _, action := range transaction.Actions {
-			if len(action.Data) > appConfig.MaxTransactionSize {
-				logFailure("Transaction size exceed maximum", r)
-				http.Error(w, "INVALID_TRANSACTION_SIZE", 400)
+		if len(jsonBytes) > 0 {
+			var transaction Transaction
+			err := json.Unmarshal(jsonBytes, &transaction)
+			if err != nil {
+				logFailure("PARSING_ERROR", r)
 				return
+			}
+			for _, action := range transaction.Actions {
+				if len(action.Data) > appConfig.MaxTransactionSize {
+					logFailure("INVALID_TRANSACTION_SIZE", r)
+					http.Error(w, "INVALID_TRANSACTION_SIZE", 400)
+					return
+				}
 			}
 		}
 		next.ServeHTTP(w, r)
@@ -221,9 +226,9 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	log.Printf("Nodeos response: %s - %s", res.Status, body)
 
 	if res.StatusCode == 200 {
-		logSuccess("", r)
+		logSuccess("SUCCESS", r)
 	} else {
-		logFailure("Transaction failed", r)
+		logFailure("TRANSACTION_FAILED", r)
 	}
 
 	_, err = w.Write(body)

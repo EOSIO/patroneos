@@ -197,6 +197,18 @@ func chainMiddleware(mw ...middleware) middleware {
 	}
 }
 
+func copyHeaders(response http.Header, request http.Header) {
+	for key, value := range request {
+		// Let our server set the Content-Length
+		if key == "Content-Length" {
+			continue
+		}
+		for _, header := range value {
+			response.Add(key, header)
+		}
+	}
+}
+
 // If the request passes all middleware validations
 // we forward it to the node to be processed.
 func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
@@ -222,8 +234,6 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	body, _ = ioutil.ReadAll(res.Body)
-	// TODO: this is just for debugging
-	log.Printf("Nodeos response: %s - %s", res.Status, body)
 
 	if res.StatusCode == 200 {
 		logSuccess("SUCCESS", r)
@@ -231,6 +241,8 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 		logFailure("TRANSACTION_FAILED", r)
 	}
 
+	copyHeaders(w.Header(), r.Header)
+	w.WriteHeader(res.StatusCode)
 	_, err = w.Write(body)
 	if err != nil {
 		log.Printf("Error writing response body %s", err)

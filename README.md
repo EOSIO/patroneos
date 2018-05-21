@@ -4,7 +4,7 @@ Patroneos provides a layer of protection for EOSIO nodes designed to protect aga
 It operates in two modes, filter and log. When running in filter mode, it proxies requests to the node through a series of middleware that perform various checks and logs success or failures to the log agents. When running in log mode, it receives logs from the filter agent and writes them to a file in a format that fail2ban can process.
 
 ## Configuration
-The configuration can be update through the `config.json` file or by sending a `POST` request with the new body to `/config`.
+The configuration can be update through the `config.json` file or by sending a `POST` request with the new configuration in the request body to `/config`.
 
 ## Middleware Verification Layer
 
@@ -55,3 +55,12 @@ If a rule violation is detected, the request is immediately rejected. Additional
 #### Nodeos
 
 Once the request is inspected and found to not violate any rules, the request is then routed to Nodeos to be handled as it normally would.
+
+### Redundancy and Auto Scaling
+
+Our POC environment only contains one instance of proxy, filter, and nodeos. For a production environment, you will likely require redundancy. Due to the large number environments Patroneos may be ran within, we have not baked in a solution for network autodiscovery. Instead, we have created an endpoint (/config) within Patroneos that can be used to update the configuration of Patroneos without restarting the daemon. From here, you could use a tool such as Ansible/Puppet/Chef/etc. to fire up a new instance of the filter, and then do `POST` requests to all the proxies to update the configuration with the new filter that was added.
+
+## Documentation for Third Party Utilities
+
+- [HAProxy](http://www.haproxy.org/#docs)
+- [fail2ban](https://fail2ban.readthedocs.io/en/latest/)

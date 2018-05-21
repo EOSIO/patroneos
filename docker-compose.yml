@@ -8,7 +8,7 @@ services:
         ports:
             - "443:443"
             - "8080:8080"
-            - "8888:8888"
+            - "9999:9999"
         privileged: true
         network_mode: "host"
     filter:
@@ -17,4 +17,13 @@ services:
             dockerfile: docker/filter/Dockerfile
         ports:
             - "8081:8081"
+        network_mode: "host"
+    nodeos:
+        image: eosio/eos
+        command: /opt/eosio/bin/nodeosd.sh --data-dir /opt/eosio/bin/data-dir
+        ports:
+            - "8888:8888"
+            - "9876:9876"
+        expose:
+            - "8888"        
 

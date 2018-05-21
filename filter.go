@@ -13,6 +13,12 @@ import (
 // and calls the next HTTP handler as the final action.
 type middleware func(next http.HandlerFunc) http.HandlerFunc
 
+// ErrorMessage defines the structure of an error response
+type ErrorMessage struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
 // Action represents the structure of an action rpc payload
 type Action struct {
 	Code          string        `json:"code"`
@@ -49,7 +55,7 @@ func getHost(r *http.Request) string {
 }
 
 // logFailure logs a failure to the Fail2Ban server
-func logFailure(message string, r *http.Request) {
+func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 	remoteHost := getHost(r)
 	for _, logAgent := range appConfig.LogEndpoints {
 		logEvent := Log{
@@ -67,6 +73,13 @@ func logFailure(message string, r *http.Request) {
 		}
 	}
 	log.Printf("Failure: %s %s", remoteHost, message)
+	if w != nil {
+		errorBody, _ := json.Marshal(ErrorMessage{Message: message, Code: 400})
+		w.Header().Add("X-REJECTED-BY", "patroneos")
+		w.Header().Add("CONTENT-TYPE", "application/json")
+		w.WriteHeader(400)
+		w.Write(errorBody)
+	}
 }
 
 // logSuccess logs a success to the Fail2Ban server
@@ -97,8 +110,7 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
 		if len(jsonBytes) > 0 {
 			if !json.Valid(jsonBytes) || err != nil {
-				logFailure("INVALID_JSON", r)
-				http.Error(w, "INVALID_JSON", 400)
+				logFailure("INVALID_JSON", w, r)
 				return
 			}
 		}
@@ -117,12 +129,11 @@ func validateSignatures(next http.HandlerFunc) http.HandlerFunc {
 		if len(jsonBytes) > 0 {
 			err := json.Unmarshal(jsonBytes, &transaction)
 			if err != nil {
-				logFailure("PARSING_ERROR", r)
+				logFailure("PARSING_ERROR", w, r)
 				return
 			}
 			if len(transaction.Signatures) > appConfig.MaxSignatures {
-				logFailure("INVALID_NUMBER_SIGNATURES", r)
-				http.Error(w, "INVALID_NUMBER_SIGNATURES", 400)
+				logFailure("INVALID_NUMBER_SIGNATURES", w, r)
 				return
 			}
 		}
@@ -140,15 +151,14 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 		if len(jsonBytes) > 0 {
 			err := json.Unmarshal(jsonBytes, &transaction)
 			if err != nil {
-				logFailure("PARSING_ERROR", r)
+				logFailure("PARSING_ERROR", w, r)
 				return
 			}
 
 			for _, action := range transaction.Actions {
 				_, exists := appConfig.ContractBlackList[action.Code]
 				if exists {
-					logFailure("BLACKLISTED_CONTRACT", r)
-					http.Error(w, "BLACKLISTED_CONTRACT", 400)
+					logFailure("BLACKLISTED_CONTRACT", w, r)
 					return
 				}
 			}
@@ -166,13 +176,12 @@ func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 			var transaction Transaction
 			err := json.Unmarshal(jsonBytes, &transaction)
 			if err != nil {
-				logFailure("PARSING_ERROR", r)
+				logFailure("PARSING_ERROR", w, r)
 				return
 			}
 			for _, action := range transaction.Actions {
 				if len(action.Data) > appConfig.MaxTransactionSize {
-					logFailure("INVALID_TRANSACTION_SIZE", r)
-					http.Error(w, "INVALID_TRANSACTION_SIZE", 400)
+					logFailure("INVALID_TRANSACTION_SIZE", w, r)
 					return
 				}
 			}
@@ -238,7 +247,7 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	if res.StatusCode == 200 {
 		logSuccess("SUCCESS", r)
 	} else {
-		logFailure("TRANSACTION_FAILED", r)
+		logFailure("TRANSACTION_FAILED", nil, r)
 	}
 
 	copyHeaders(w.Header(), r.Header)

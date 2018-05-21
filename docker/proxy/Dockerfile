@@ -30,7 +30,7 @@ RUN rm /etc/fail2ban/jail.d/defaults-debian.conf && mkdir -p /var/run/fail2ban
 
 EXPOSE 443/tcp
 EXPOSE 8080/tcp
-EXPOSE 8888/tcp
+EXPOSE 9999/tcp
 
 USER root
 

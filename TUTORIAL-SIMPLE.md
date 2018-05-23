@@ -28,7 +28,7 @@ The simplest deployment of Patroneos is to run it on the same machine that nodeo
 Example Structure:
 ```
 --------------------------------------------------------
-|    User PC     | Request Data |     Nodeos Server    |
+|    User's PC   | Request Data |     Nodeos Server    |
 -------------------------------------------------------
 |                |              |                      |
 | User's machine |      -->     | Patroneos --> Nodeos |

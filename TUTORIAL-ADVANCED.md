@@ -14,7 +14,7 @@ Our POC environment is made up of three layers. The proxy, filter and nodeos
 
 #### Traffic Flow
 
-*End User* -> Proxy -> Filter -> **Nodeos** -> Filter -> Proxy -> *End User*
+*User* -> Proxy -> Filter -> **Nodeos** -> Filter -> Proxy -> *User*
 
 #### Proxy
 

@@ -88,7 +88,7 @@ func TestValidateJSON(t *testing.T) {
 			description:  "invalid",
 			url:          "/",
 			body:         []byte(`{"name"}`),
-			expectedBody: "INVALID_JSON\n",
+			expectedBody: "{\"message\":\"INVALID_JSON\",\"code\":400}",
 			expectedCode: 400,
 		},
 		{
@@ -138,7 +138,7 @@ func TestValidateContract(t *testing.T) {
 			description:  "invalid",
 			url:          "/",
 			body:         invalidBody,
-			expectedBody: "BLACKLISTED_CONTRACT\n",
+			expectedBody: "{\"message\":\"BLACKLISTED_CONTRACT\",\"code\":400}",
 			expectedCode: 400,
 		},
 		{
@@ -190,7 +190,7 @@ func TestValidateSignatures(t *testing.T) {
 			description:  "invalid",
 			url:          "/",
 			body:         invalidBody,
-			expectedBody: "INVALID_NUMBER_SIGNATURES\n",
+			expectedBody: "{\"message\":\"INVALID_NUMBER_SIGNATURES\",\"code\":400}",
 			expectedCode: 400,
 		},
 		{
@@ -202,7 +202,7 @@ func TestValidateSignatures(t *testing.T) {
 		},
 	}
 
-	ts := httptest.NewServer(validateSignatures(getTestHandler()))
+	ts := httptest.NewServer(validateMaxSignatures(getTestHandler()))
 	defer ts.Close()
 
 	setConfig()
@@ -244,7 +244,7 @@ func TestValidateTransactionSize(t *testing.T) {
 			description:  "invalid",
 			url:          "/",
 			body:         invalidBody,
-			expectedBody: "INVALID_TRANSACTION_SIZE\n",
+			expectedBody: "{\"message\":\"INVALID_TRANSACTION_SIZE\",\"code\":400}",
 			expectedCode: 400,
 		},
 		{

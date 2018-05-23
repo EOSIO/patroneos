@@ -103,9 +103,9 @@ func main() {
 	if operatingMode == "filter" {
 		addFilterHandlers(mux)
 		fmt.Println("Filtering node requests...")
-	} else if operatingMode == "log" {
+	} else if operatingMode == "fail2ban-relay" {
 		addLogHandlers(mux)
-		fmt.Println("Listening for log events...")
+		fmt.Println("Relaying log events to fail2ban...")
 	} else {
 		fmt.Printf("This mode is not supported.")
 		os.Exit(1)

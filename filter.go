@@ -119,8 +119,8 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-// validateSignatures checks that the transaction does not have more signatures than the max allowed.
-func validateSignatures(next http.HandlerFunc) http.HandlerFunc {
+// validateMaxSignatures checks that the transaction does not have more signatures than the max allowed.
+func validateMaxSignatures(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var transaction Transaction
 
@@ -264,7 +264,7 @@ func addFilterHandlers(mux *http.ServeMux) {
 	middlewareChain := chainMiddleware(
 		validateJSON,
 		validateTransactionSize,
-		validateSignatures,
+		validateMaxSignatures,
 		validateContract,
 	)
 

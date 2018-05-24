@@ -36,3 +36,7 @@ To setup Patroneos in the simple configuration, a user just needs nodeos running
 The advanced configuration works in coordination with fail2ban to ban users that repeatedly submit blocked requests. It requires a reverse proxy, patroneos running in fail2ban-relay mode, fail2ban, patroneos running in filter mode, and nodeos.
 
 The advanced configuration is defined more in depth at [Advanced Patroneos Setup](TUTORIAL-ADVANCED.md)
+
+## Data Flow Diagram
+
+![Data Flow Diagram](patroneos-diagram.png "Patroneos Data Flow Diagram")

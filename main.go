@@ -98,7 +98,7 @@ func main() {
 	parseConfigFile()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/config", updateConfig)
+	mux.HandleFunc("/patroneos/config", updateConfig)
 
 	if operatingMode == "filter" {
 		addFilterHandlers(mux)

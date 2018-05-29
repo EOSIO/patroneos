@@ -44,5 +44,5 @@ func addLogHandlers(mux *http.ServeMux) {
 	}
 
 	logger = log.New(logFile, "", log.LstdFlags)
-	mux.HandleFunc("/", listenForLogs)
+	mux.HandleFunc("/patroneos/fail2ban-relay", listenForLogs)
 }

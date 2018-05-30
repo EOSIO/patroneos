@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // Middleware returns a handler that can perform various operations
@@ -58,6 +59,9 @@ func getHost(r *http.Request) string {
 func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 	remoteHost := getHost(r)
 	for _, logAgent := range appConfig.LogEndpoints {
+		if !strings.Contains(logAgent, "/patroneos/fail2ban-relay") {
+			logAgent += "/patroneos/fail2ban-relay"
+		}
 		logEvent := Log{
 			Host:    remoteHost,
 			Success: false,
@@ -67,7 +71,7 @@ func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("Error marshalling failure message %s", err)
 		}
-		client.Post(logAgent, "application/json", bytes.NewBuffer(body))
+		_, err = client.Post(logAgent, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			log.Print(err)
 		}
@@ -78,7 +82,10 @@ func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("X-REJECTED-BY", "patroneos")
 		w.Header().Add("CONTENT-TYPE", "application/json")
 		w.WriteHeader(400)
-		w.Write(errorBody)
+		_, err := w.Write(errorBody)
+		if err != nil {
+			log.Printf("Error writing response body %s", err)
+		}
 	}
 }
 
@@ -86,6 +93,9 @@ func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 func logSuccess(message string, r *http.Request) {
 	remoteHost := getHost(r)
 	for _, logAgent := range appConfig.LogEndpoints {
+		if !strings.Contains(logAgent, "/patroneos/fail2ban-relay") {
+			logAgent += "/patroneos/fail2ban-relay"
+		}
 		logEvent := Log{
 			Host:    remoteHost,
 			Success: true,
@@ -95,7 +105,7 @@ func logSuccess(message string, r *http.Request) {
 		if err != nil {
 			log.Printf("Error marshalling success message %s", err)
 		}
-		client.Post(logAgent, "application/json", bytes.NewBuffer(body))
+		_, err = client.Post(logAgent, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			log.Print(err)
 		}
@@ -221,8 +231,6 @@ func copyHeaders(response http.Header, request http.Header) {
 // If the request passes all middleware validations
 // we forward it to the node to be processed.
 func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
-	log.Println("forward calls to nodeos")
-
 	nodeosHost := fmt.Sprintf("%s://%s:%s", appConfig.NodeosProtocol, appConfig.NodeosURL, appConfig.NodeosPort)
 	url := nodeosHost + r.URL.String()
 	method := r.Method
@@ -242,6 +250,8 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer res.Body.Close()
+
 	body, _ = ioutil.ReadAll(res.Body)
 
 	if res.StatusCode == 200 {
@@ -259,6 +269,21 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func relay(w http.ResponseWriter, r *http.Request) {
+	message := "Patroneos cannot receive fail2ban relay requests when running in filter mode. Please check your config."
+	log.Printf("%s", message)
+
+	errorBody, _ := json.Marshal(ErrorMessage{Message: message, Code: 403})
+
+	w.WriteHeader(http.StatusForbidden)
+	_, err := w.Write(errorBody)
+
+	if err != nil {
+		log.Printf("Error writing response body %s", err)
+		return
+	}
+}
+
 func addFilterHandlers(mux *http.ServeMux) {
 	// Middleware are executed in the order that they are passed to chainMiddleware.
 	middlewareChain := chainMiddleware(
@@ -269,4 +294,5 @@ func addFilterHandlers(mux *http.ServeMux) {
 	)
 
 	mux.HandleFunc("/", middlewareChain(forwardCallToNodeos))
+	mux.HandleFunc("/patroneos/fail2ban-relay", relay)
 }

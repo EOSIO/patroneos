@@ -1,5 +1,5 @@
 {
-    "listenPort": "8080",
+    "listenPort": "8081",
 
     "nodeosProtocol": "http",
     "nodeosUrl": "localhost",
@@ -12,7 +12,7 @@
     "maxTransactionSize": 1000000,
 
     "logEndpoints": ["http://localhost:8080"],
-    "filterEndpoints": ["http://localhost:8081"],
+    "filterEndpoints": [],
 
     "logFileLocation": "./fail2ban.log"
 }

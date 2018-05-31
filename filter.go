@@ -260,7 +260,7 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 		logFailure("TRANSACTION_FAILED", nil, r)
 	}
 
-	copyHeaders(w.Header(), r.Header)
+	copyHeaders(w.Header(), res.Header)
 	w.WriteHeader(res.StatusCode)
 	_, err = w.Write(body)
 	if err != nil {

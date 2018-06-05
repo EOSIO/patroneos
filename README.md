@@ -23,6 +23,9 @@ To setup Patroneos in the simple configuration, a user just needs nodeos running
 * validateJSON
     * This middleware checks that the body provided can be parsed into a JSON object.
 
+* validateMaxTransactions
+    * This middleware checks that the number of transactions in a request does not exceed the defined maximum.
+
 * validateMaxSignatures
     * This middleware checks that the number of signatures on the transaction are not greater than the defined maximum.
 

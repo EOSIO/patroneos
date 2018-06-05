@@ -24,6 +24,7 @@ func setConfig() {
 	appConfig.ContractBlackList = map[string]bool{"currency": true}
 	appConfig.MaxSignatures = 1
 	appConfig.MaxTransactionSize = 50
+	appConfig.MaxTransactions = 2
 }
 
 func getTestHandler() http.HandlerFunc {
@@ -102,6 +103,34 @@ func TestValidateJSON(t *testing.T) {
 
 	ts := httptest.NewServer(validateJSON(getTestHandler()))
 	defer ts.Close()
+
+	for _, tc := range tests {
+		verifyMiddleware(t, ts, tc)
+	}
+}
+
+func TestValidateMaxTransactions(t *testing.T) {
+	tests := []TestStruct{
+		{
+			description:  "invalid",
+			url:          "/",
+			body:         []byte(`[{"name": "Tony Stark"}, {"name": "Steve Rogers"},{"name": "Bruce Banner"}]`),
+			expectedBody: "{\"message\":\"TOO_MANY_TRANSACTIONS\",\"code\":400}",
+			expectedCode: 400,
+		},
+		{
+			description:  "valid",
+			url:          "/",
+			body:         []byte(`[{"name": "Tony Stark"}, {"name": "Steve Rogers"}]`),
+			expectedBody: "SUCCESS\n",
+			expectedCode: 200,
+		},
+	}
+
+	ts := httptest.NewServer(validateMaxTransactions(getTestHandler()))
+	defer ts.Close()
+
+	setConfig()
 
 	for _, tc := range tests {
 		verifyMiddleware(t, ts, tc)

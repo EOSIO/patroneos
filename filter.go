@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -131,8 +132,6 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 				logFailure("INVALID_JSON", w, r)
 				return
 			}
-		} else {
-			logFailure("EMPTY_BODY", w, r)
 		}
 
 		next.ServeHTTP(w, r)
@@ -142,7 +141,13 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 // validateMaxSignatures checks that the transaction does not have more signatures than the max allowed.
 func validateMaxSignatures(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		transactions := r.Context().Value(transactionsKey).([]Transaction)
+
+		transactions, ctx, err := getTransactions(r)
+		if err != nil {
+			logFailure(err.Error(), w, r)
+			return
+		}
+
 		for _, transaction := range transactions {
 			if len(transaction.Signatures) > appConfig.MaxSignatures {
 				logFailure("INVALID_NUMBER_SIGNATURES", w, r)
@@ -150,14 +155,20 @@ func validateMaxSignatures(next http.HandlerFunc) http.HandlerFunc {
 			}
 		}
 
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // validateContract checks that the transaction does not act on a blacklisted contract.
 func validateContract(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		transactions := r.Context().Value(transactionsKey).([]Transaction)
+
+		transactions, ctx, err := getTransactions(r)
+		if err != nil {
+			logFailure(err.Error(), w, r)
+			return
+		}
+
 		for _, transaction := range transactions {
 			for _, action := range transaction.Actions {
 				_, exists := appConfig.ContractBlackList[action.Code]
@@ -167,26 +178,38 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // validateMaxTransactions checks that the number of transactions in the request does not exceed the defined maximum.
 func validateMaxTransactions(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		transactions := r.Context().Value(transactionsKey).([]Transaction)
+
+		transactions, ctx, err := getTransactions(r)
+		if err != nil {
+			logFailure(err.Error(), w, r)
+			return
+		}
+
 		if len(transactions) > appConfig.MaxTransactions {
 			logFailure("TOO_MANY_TRANSACTIONS", w, r)
 			return
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // validateTransactionSize checks that the transaction data does not exceed the max allowed size.
 func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		transactions := r.Context().Value(transactionsKey).([]Transaction)
+
+		transactions, ctx, err := getTransactions(r)
+		if err != nil {
+			logFailure(err.Error(), w, r)
+			return
+		}
+
 		for _, transaction := range transactions {
 			for _, action := range transaction.Actions {
 				if len(action.Data) > appConfig.MaxTransactionSize {
@@ -195,16 +218,17 @@ func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 				}
 			}
 		}
-		next.ServeHTTP(w, r)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }
 
 // getTransactions parses json and returns a slice containing the transactions
-func getTransactions(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var transactions []Transaction
-		var transaction Transaction
+func getTransactions(r *http.Request) ([]Transaction, context.Context, error) {
+	var transactions []Transaction
+	var transaction Transaction
 
+	// Context has not been set
+	if r.Context().Value(transactionsKey) == nil {
 		// Read request body
 		jsonBytes, _ := ioutil.ReadAll(r.Body)
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
@@ -217,8 +241,7 @@ func getTransactions(next http.HandlerFunc) http.HandlerFunc {
 			err := json.Unmarshal(jsonBytes, &transaction)
 
 			if err != nil {
-				logFailure("PARSE_ERROR", w, r)
-				return
+				return nil, nil, errors.New("PARSE_ERROR")
 			}
 
 			transactions = append(transactions, transaction)
@@ -227,15 +250,18 @@ func getTransactions(next http.HandlerFunc) http.HandlerFunc {
 			err := json.Unmarshal(jsonBytes, &transactions)
 
 			if err != nil {
-				logFailure("PARSE_ERROR", w, r)
-				return
+				return nil, nil, errors.New("PARSE_ERROR")
 			}
 		}
 
 		// Add transactions to request context so subsequent middleware does not have to parse the transactions again
 		ctx := context.WithValue(r.Context(), transactionsKey, transactions)
-		next.ServeHTTP(w, r.WithContext(ctx))
+		return transactions, ctx, nil
 	}
+
+	// Context already exists
+	transactions = r.Context().Value(transactionsKey).([]Transaction)
+	return transactions, r.Context(), nil
 }
 
 // Walks through the middleware list in reverse order and
@@ -326,7 +352,6 @@ func addFilterHandlers(mux *http.ServeMux) {
 	// Middleware are executed in the order that they are passed to chainMiddleware.
 	middlewareChain := chainMiddleware(
 		validateJSON,
-		getTransactions,
 		validateMaxTransactions,
 		validateTransactionSize,
 		validateMaxSignatures,

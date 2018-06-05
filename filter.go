@@ -171,6 +171,18 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+// validateMaxTransactions checks that the number of transactions in the request does not exceed the defined maximum.
+func validateMaxTransactions(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		transactions := r.Context().Value(transactionsKey).([]Transaction)
+		if len(transactions) > appConfig.MaxTransactions {
+			logFailure("TOO_MANY_TRANSACTIONS", w, r)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
+}
+
 // validateTransactionSize checks that the transaction data does not exceed the max allowed size.
 func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -315,6 +327,7 @@ func addFilterHandlers(mux *http.ServeMux) {
 	middlewareChain := chainMiddleware(
 		validateJSON,
 		getTransactions,
+		validateMaxTransactions,
 		validateTransactionSize,
 		validateMaxSignatures,
 		validateContract,

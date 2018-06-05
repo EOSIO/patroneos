@@ -19,6 +19,7 @@ type Config struct {
 	ContractBlackList  map[string]bool `json:"contractBlackList"`
 	MaxSignatures      int             `json:"maxSignatures"`
 	MaxTransactionSize int             `json:"maxTransactionSize"`
+	MaxTransactions    int             `json:"maxTransactions"`
 	LogEndpoints       []string        `json:"logEndpoints"`
 	FilterEndpoints    []string        `json:"filterEndpoints"`
 	LogFileLocation    string          `json:"logFileLocation"`

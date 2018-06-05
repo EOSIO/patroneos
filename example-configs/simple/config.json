@@ -9,5 +9,6 @@
         "currency": true
     },
     "maxSignatures": 10,
-    "maxTransactionSize": 1000000
+    "maxTransactionSize": 1000000,
+    "maxTransactions": 32
 }

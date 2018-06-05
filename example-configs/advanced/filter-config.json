@@ -10,6 +10,7 @@
     },
     "maxSignatures": 10,
     "maxTransactionSize": 1000000,
+    "maxTransactions": 32,
 
     "logEndpoints": ["http://localhost:8080"],
     "filterEndpoints": [],

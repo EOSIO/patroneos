@@ -65,7 +65,13 @@ func getHost(r *http.Request) string {
 }
 
 // logFailure logs a failure to the Fail2Ban server
-func logFailure(message string, w http.ResponseWriter, r *http.Request) {
+func logFailure(message string, w http.ResponseWriter, r *http.Request, statusCode int) {
+
+	// Default status code
+	if statusCode < 100 {
+		statusCode = 400
+	}
+
 	remoteHost := getHost(r)
 	for _, logAgent := range appConfig.LogEndpoints {
 		if !strings.Contains(logAgent, "/patroneos/fail2ban-relay") {
@@ -87,10 +93,10 @@ func logFailure(message string, w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("Failure: %s %s", remoteHost, message)
 	if w != nil {
-		errorBody, _ := json.Marshal(ErrorMessage{Message: message, Code: 400})
+		errorBody, _ := json.Marshal(ErrorMessage{Message: message, Code: statusCode})
 		w.Header().Add("X-REJECTED-BY", "patroneos")
 		w.Header().Add("CONTENT-TYPE", "application/json")
-		w.WriteHeader(400)
+		w.WriteHeader(statusCode)
 		_, err := w.Write(errorBody)
 		if err != nil {
 			log.Printf("Error writing response body %s", err)
@@ -129,7 +135,7 @@ func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(jsonBytes))
 		if len(jsonBytes) > 0 {
 			if !json.Valid(jsonBytes) || err != nil {
-				logFailure("INVALID_JSON", w, r)
+				logFailure("INVALID_JSON", w, r, 0)
 				return
 			}
 		}
@@ -144,13 +150,13 @@ func validateMaxSignatures(next http.HandlerFunc) http.HandlerFunc {
 
 		transactions, ctx, err := getTransactions(r)
 		if err != nil {
-			logFailure(err.Error(), w, r)
+			logFailure(err.Error(), w, r, 0)
 			return
 		}
 
 		for _, transaction := range transactions {
 			if len(transaction.Signatures) > appConfig.MaxSignatures {
-				logFailure("INVALID_NUMBER_SIGNATURES", w, r)
+				logFailure("INVALID_NUMBER_SIGNATURES", w, r, 0)
 				return
 			}
 		}
@@ -165,7 +171,7 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 
 		transactions, ctx, err := getTransactions(r)
 		if err != nil {
-			logFailure(err.Error(), w, r)
+			logFailure(err.Error(), w, r, 0)
 			return
 		}
 
@@ -173,7 +179,7 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 			for _, action := range transaction.Actions {
 				_, exists := appConfig.ContractBlackList[action.Code]
 				if exists {
-					logFailure("BLACKLISTED_CONTRACT", w, r)
+					logFailure("BLACKLISTED_CONTRACT", w, r, 0)
 					return
 				}
 			}
@@ -188,12 +194,12 @@ func validateMaxTransactions(next http.HandlerFunc) http.HandlerFunc {
 
 		transactions, ctx, err := getTransactions(r)
 		if err != nil {
-			logFailure(err.Error(), w, r)
+			logFailure(err.Error(), w, r, 0)
 			return
 		}
 
 		if len(transactions) > appConfig.MaxTransactions {
-			logFailure("TOO_MANY_TRANSACTIONS", w, r)
+			logFailure("TOO_MANY_TRANSACTIONS", w, r, 0)
 			return
 		}
 		next.ServeHTTP(w, r.WithContext(ctx))
@@ -206,14 +212,14 @@ func validateTransactionSize(next http.HandlerFunc) http.HandlerFunc {
 
 		transactions, ctx, err := getTransactions(r)
 		if err != nil {
-			logFailure(err.Error(), w, r)
+			logFailure(err.Error(), w, r, 0)
 			return
 		}
 
 		for _, transaction := range transactions {
 			for _, action := range transaction.Actions {
 				if len(action.Data) > appConfig.MaxTransactionSize {
-					logFailure("INVALID_TRANSACTION_SIZE", w, r)
+					logFailure("INVALID_TRANSACTION_SIZE", w, r, 0)
 					return
 				}
 			}
@@ -304,6 +310,7 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("Error in creating request %s", err)
+		logFailure("NODEOS_REQUEST_NOT_CREATED", w, r, 500)
 		return
 	}
 
@@ -311,6 +318,7 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		log.Printf("Error in executing request %s", err)
+		logFailure("NODEOS_UNREACHABLE", w, r, 503)
 		return
 	}
 
@@ -321,7 +329,7 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	if res.StatusCode == 200 {
 		logSuccess("SUCCESS", r)
 	} else {
-		logFailure("TRANSACTION_FAILED", nil, r)
+		logFailure("TRANSACTION_FAILED", nil, r, 0)
 	}
 
 	copyHeaders(w.Header(), res.Header)

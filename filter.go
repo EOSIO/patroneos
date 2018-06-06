@@ -128,11 +128,6 @@ func logSuccess(message string, r *http.Request) {
 	log.Printf("Success: %s %s", remoteHost, message)
 }
 
-// logUnreachable returns a 503 status code if nodeos is unreachable
-func logUnreachable(message string, w http.ResponseWriter, r *http.Request) {
-
-}
-
 // validateJSON checks that the POST body contains a valid JSON object.
 func validateJSON(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {

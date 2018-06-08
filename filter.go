@@ -288,10 +288,6 @@ func chainMiddleware(mw ...middleware) middleware {
 
 func copyHeaders(response http.Header, request http.Header) {
 	for key, value := range request {
-		// Let our server set the Content-Length
-		if key == "Content-Length" {
-			continue
-		}
 		for _, header := range value {
 			response.Add(key, header)
 		}
@@ -313,6 +309,10 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 		logFailure("NODEOS_REQUEST_NOT_CREATED", w, r, 500)
 		return
 	}
+
+	// Forward headers to nodeos
+	request.Header = make(http.Header)
+	copyHeaders(request.Header, r.Header)
 
 	res, err := client.Do(request)
 

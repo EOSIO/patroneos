@@ -191,17 +191,21 @@ func validateContract(next http.HandlerFunc) http.HandlerFunc {
 // validateMaxTransactions checks that the number of transactions in the request does not exceed the defined maximum.
 func validateMaxTransactions(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		transactions, ctx, err := getTransactions(r)
+
 		if err != nil {
 			logFailure(err.Error(), w, r, 0)
 			return
 		}
 
-		if len(transactions) > appConfig.MaxTransactions {
-			logFailure("TOO_MANY_TRANSACTIONS", w, r, 0)
-			return
+		// Skip this middleware if MaxTransactions is not configured, or set to 0
+		if appConfig.MaxTransactions > 0 {
+			if len(transactions) > appConfig.MaxTransactions {
+				logFailure("TOO_MANY_TRANSACTIONS", w, r, 0)
+				return
+			}
 		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	}
 }

@@ -149,7 +149,6 @@ func TestValidateContract(t *testing.T) {
 		RefBlockNum:    "1",
 		RefBlockPrefix: "eos",
 		Expiration:     "never",
-		Scope:          []string{"testing"},
 		Actions:        []Action{invalidAction},
 		Signatures:     []string{"12345"},
 		Authorizations: []interface{}{"eosio"},
@@ -194,7 +193,6 @@ func TestValidateSignatures(t *testing.T) {
 		RefBlockNum:    "1",
 		RefBlockPrefix: "eos",
 		Expiration:     "never",
-		Scope:          []string{"testing"},
 		Actions: []Action{
 			{
 				Code:          "tokens",
@@ -254,7 +252,6 @@ func TestValidateTransactionSize(t *testing.T) {
 		RefBlockNum:    "1",
 		RefBlockPrefix: "eos",
 		Expiration:     "never",
-		Scope:          []string{"testing"},
 		Actions:        []Action{invalidAction},
 		Signatures:     []string{"12345"},
 		Authorizations: []interface{}{"eosio"},

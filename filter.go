@@ -36,7 +36,6 @@ type Transaction struct {
 	RefBlockNum    string        `json:"ref_block_num"`
 	RefBlockPrefix string        `json:"ref_block_prefix"`
 	Expiration     string        `json:"expiration"`
-	Scope          []string      `json:"scope"`
 	Actions        []Action      `json:"actions"`
 	Signatures     []string      `json:"signatures"`
 	Authorizations []interface{} `json:"authorizations"`

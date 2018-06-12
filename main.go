@@ -12,17 +12,18 @@ import (
 
 // Config defines the application configuration
 type Config struct {
-	ListenPort         string          `json:"listenPort"`
-	NodeosProtocol     string          `json:"nodeosProtocol"`
-	NodeosURL          string          `json:"nodeosUrl"`
-	NodeosPort         string          `json:"nodeosPort"`
-	ContractBlackList  map[string]bool `json:"contractBlackList"`
-	MaxSignatures      int             `json:"maxSignatures"`
-	MaxTransactionSize int             `json:"maxTransactionSize"`
-	MaxTransactions    int             `json:"maxTransactions"`
-	LogEndpoints       []string        `json:"logEndpoints"`
-	FilterEndpoints    []string        `json:"filterEndpoints"`
-	LogFileLocation    string          `json:"logFileLocation"`
+	ListenPort         string            `json:"listenPort"`
+	NodeosProtocol     string            `json:"nodeosProtocol"`
+	NodeosURL          string            `json:"nodeosUrl"`
+	NodeosPort         string            `json:"nodeosPort"`
+	ContractBlackList  map[string]bool   `json:"contractBlackList"`
+	MaxSignatures      int               `json:"maxSignatures"`
+	MaxTransactionSize int               `json:"maxTransactionSize"`
+	MaxTransactions    int               `json:"maxTransactions"`
+	LogEndpoints       []string          `json:"logEndpoints"`
+	FilterEndpoints    []string          `json:"filterEndpoints"`
+	LogFileLocation    string            `json:"logFileLocation"`
+	Headers            map[string]string `json:"headers"`
 }
 
 var configFile string

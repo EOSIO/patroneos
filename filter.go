@@ -24,21 +24,14 @@ type ErrorMessage struct {
 
 // Action represents the structure of an action rpc payload
 type Action struct {
-	Code          string        `json:"code"`
-	Type          string        `json:"type"`
-	Recipients    []string      `json:"recipients"`
-	Authorization []interface{} `json:"authorization"`
-	Data          string        `json:"data"`
+	Code string `json:"code"`
+	Data string `json:"data"`
 }
 
 // Transaction describes the structure of a transaction rpc payload
 type Transaction struct {
-	RefBlockNum    string        `json:"ref_block_num"`
-	RefBlockPrefix string        `json:"ref_block_prefix"`
-	Expiration     string        `json:"expiration"`
-	Actions        []Action      `json:"actions"`
-	Signatures     []string      `json:"signatures"`
-	Authorizations []interface{} `json:"authorizations"`
+	Actions    []Action `json:"actions"`
+	Signatures []string `json:"signatures"`
 }
 
 // Define Context Keys
@@ -61,6 +54,17 @@ func getHost(r *http.Request) string {
 	}
 
 	return remoteHost
+}
+
+// injectHeaders adds configured headers into response
+func injectHeaders(headers http.Header) {
+	for header, value := range appConfig.Headers {
+		if value != "" {
+			headers.Set(header, value)
+		} else {
+			headers.Del(header)
+		}
+	}
 }
 
 // logFailure logs a failure to the Fail2Ban server
@@ -95,6 +99,8 @@ func logFailure(message string, w http.ResponseWriter, r *http.Request, statusCo
 		errorBody, _ := json.Marshal(ErrorMessage{Message: message, Code: statusCode})
 		w.Header().Add("X-REJECTED-BY", "patroneos")
 		w.Header().Add("CONTENT-TYPE", "application/json")
+
+		injectHeaders(w.Header())
 		w.WriteHeader(statusCode)
 		_, err := w.Write(errorBody)
 		if err != nil {
@@ -336,7 +342,12 @@ func forwardCallToNodeos(w http.ResponseWriter, r *http.Request) {
 	}
 
 	copyHeaders(w.Header(), res.Header)
+
+	// Inject configured headers
+	injectHeaders(w.Header())
+
 	w.WriteHeader(res.StatusCode)
+
 	_, err = w.Write(body)
 	if err != nil {
 		log.Printf("Error writing response body %s", err)

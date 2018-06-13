@@ -139,19 +139,12 @@ func TestValidateMaxTransactions(t *testing.T) {
 
 func TestValidateContract(t *testing.T) {
 	invalidAction := Action{
-		Code:          "currency",
-		Type:          "transfer",
-		Recipients:    []string{"me"},
-		Authorization: []interface{}{"eosio"},
-		Data:          "1234567890",
+		Code: "currency",
+		Data: "1234567890",
 	}
 	invalidTransaction := Transaction{
-		RefBlockNum:    "1",
-		RefBlockPrefix: "eos",
-		Expiration:     "never",
-		Actions:        []Action{invalidAction},
-		Signatures:     []string{"12345"},
-		Authorizations: []interface{}{"eosio"},
+		Actions:    []Action{invalidAction},
+		Signatures: []string{"12345"},
 	}
 	validTransaction := invalidTransaction
 	validAction := invalidAction
@@ -190,20 +183,13 @@ func TestValidateContract(t *testing.T) {
 
 func TestValidateSignatures(t *testing.T) {
 	invalidTransaction := Transaction{
-		RefBlockNum:    "1",
-		RefBlockPrefix: "eos",
-		Expiration:     "never",
 		Actions: []Action{
 			{
-				Code:          "tokens",
-				Type:          "transfer",
-				Recipients:    []string{"me"},
-				Authorization: []interface{}{"eosio"},
-				Data:          "1234567890",
+				Code: "tokens",
+				Data: "1234567890",
 			},
 		},
-		Signatures:     []string{"12345", "54321"},
-		Authorizations: []interface{}{"eosio"},
+		Signatures: []string{"12345", "54321"},
 	}
 
 	validTransaction := invalidTransaction
@@ -241,20 +227,13 @@ func TestValidateSignatures(t *testing.T) {
 
 func TestValidateTransactionSize(t *testing.T) {
 	invalidAction := Action{
-		Code:          "tokens",
-		Type:          "transfer",
-		Recipients:    []string{"me"},
-		Authorization: []interface{}{"eosio"},
-		Data:          string(bytes.Repeat([]byte("a"), 100)),
+		Code: "tokens",
+		Data: string(bytes.Repeat([]byte("a"), 100)),
 	}
 
 	invalidTransaction := Transaction{
-		RefBlockNum:    "1",
-		RefBlockPrefix: "eos",
-		Expiration:     "never",
-		Actions:        []Action{invalidAction},
-		Signatures:     []string{"12345"},
-		Authorizations: []interface{}{"eosio"},
+		Actions:    []Action{invalidAction},
+		Signatures: []string{"12345"},
 	}
 
 	validTransaction := invalidTransaction

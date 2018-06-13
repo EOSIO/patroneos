@@ -2,6 +2,24 @@
 
 Patroneos provides a layer of protection for EOSIO nodes designed to protect against some of the basic Denial of Service attack vectors. It runs in a simple configuration and a more advanced configuration.
 
+## Building
+To build patroneos, you can simply clone the repository, and then run `./build.sh` from within the repository directory.
+
+```
+git clone https://github.com/EOSIO/patroneos
+cd patroneos
+./build.sh
+```
+
+You can also target a specific branch/tag/release. In the below example, we are building Patroneos v1.1.0.
+```
+git clone -b 1.1.0 https://github.com/EOSIO/patroneos
+cd patroneos
+./build.sh
+```
+
+You can confirm the version by using `patroneosd -v` which will output the Branch/Tag/Release, Git Commit ID, and Build Date/Time.
+
 ## Simple Configuration
 The simple configuration is designed to simply drop requests that are invalid or could cause unnecessary load on the node. This is done by running the request through a set of middleware (described below) that apply rules to the request. If a request passes all the middleware, it is forwarded to the node with the response returned to the user. Otherwise, an error code and the failure condition is returned to the user.
 

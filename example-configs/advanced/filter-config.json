@@ -1,4 +1,5 @@
 {
+    "listenIP": "",
     "listenPort": "8081",
 
     "nodeosProtocol": "http",

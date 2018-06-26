@@ -6,6 +6,7 @@
 ### Configuration
 A sample configuration file is included in the repo and can be tweaked according to your individual needs.
 ```
+listenIP   -- the ip address that Patroneos listens on (defaults to all ip addresses)
 listenPort -- the port that Patroneos listens on
 
 nodeosProtocol -- the protocol nodeos listens on (HTTP vs HTTPS)

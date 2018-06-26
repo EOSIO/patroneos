@@ -13,6 +13,7 @@ import (
 
 // Config defines the application configuration
 type Config struct {
+	ListenIP           string            `json:"listenIP"`
 	ListenPort         string            `json:"listenPort"`
 	NodeosProtocol     string            `json:"nodeosProtocol"`
 	NodeosURL          string            `json:"nodeosUrl"`
@@ -141,5 +142,5 @@ func main() {
 		os.Exit(1)
 	}
 
-	log.Fatal(http.ListenAndServe(":"+appConfig.ListenPort, mux))
+	log.Fatal(http.ListenAndServe(appConfig.ListenIP+":"+appConfig.ListenPort, mux))
 }

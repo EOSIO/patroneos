@@ -1,0 +1,9 @@
+sudo: false
+language: go
+go:
+  - 1.10.x
+notifications:
+  email: false
+script:
+  - ./build.sh
+  - go test -v -race

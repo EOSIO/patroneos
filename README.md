@@ -1,4 +1,4 @@
-# Patroneos
+# Patroneos [![Build Status](https://travis-ci.org/EOSIO/patroneos.svg?branch=master)](https://travis-ci.org/EOSIO/patroneos)
 
 Patroneos provides a layer of protection for EOSIO nodes designed to protect against some of the basic Denial of Service attack vectors. It runs in a simple configuration and a more advanced configuration.
 

@@ -13,7 +13,6 @@
     "maxTransactionSize": 1000000,
     "maxTransactions": 32,
     "headers": {
-        "Access-Control-Allow-Origin": "*",
-        "Server": ""
+        "Sample-Header": "value"
     }
 }

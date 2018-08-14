@@ -20,7 +20,7 @@ services:
         network_mode: "host"
     nodeos:
         image: eosio/eos
-        command: /opt/eosio/bin/nodeosd.sh --data-dir /opt/eosio/bin/data-dir
+        command: /opt/eosio/bin/nodeosd.sh -e --data-dir /opt/eosio/bin/data-dir --http-alias=localhost:8888
         ports:
             - "8888:8888"
             - "9876:9876"

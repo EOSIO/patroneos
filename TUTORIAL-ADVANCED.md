@@ -32,7 +32,7 @@ User -/-> Proxy
 
 #### Proxy
 
-For this layer, we are proxying requests through HAProxy. At this point, we terminate SSL, and then route the request to the filter layer.
+For this layer, we are proxying requests through HAProxy. At this point, we terminate SSL, and then route the request to the filter layer. *Note* HAProxy should not expose the port that the configuration is exposed on.
 
 The proxy runs Patroneos in log mode (listens for rule violations from the filter(s), and logs them to a log file.
 

@@ -1,5 +1,6 @@
 {
     "listenIP": "",
+    "configListenPort": "9000",
     "listenPort": "8080",
 
     "nodeosProtocol": "http",

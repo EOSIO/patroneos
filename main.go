@@ -14,6 +14,7 @@ import (
 // Config defines the application configuration
 type Config struct {
 	ListenIP           string            `json:"listenIP"`
+	ConfigListenPort   string            `json:"configListenPort"`
 	ListenPort         string            `json:"listenPort"`
 	NodeosProtocol     string            `json:"nodeosProtocol"`
 	NodeosURL          string            `json:"nodeosUrl"`
@@ -129,7 +130,6 @@ func main() {
 	parseConfigFile()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/patroneos/config", updateConfig)
 
 	if operatingMode == "filter" {
 		addFilterHandlers(mux)
@@ -141,6 +141,12 @@ func main() {
 		fmt.Printf("This mode is not supported.")
 		os.Exit(1)
 	}
+
+	go func() {
+		configMux := http.NewServeMux()
+		configMux.HandleFunc("/patroneos/config", updateConfig)
+		log.Fatal(http.ListenAndServe(appConfig.ListenIP+":"+appConfig.ConfigListenPort, configMux))
+	}()
 
 	log.Fatal(http.ListenAndServe(appConfig.ListenIP+":"+appConfig.ListenPort, mux))
 }
